@@ -1,37 +1,42 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Diagnostics;
-using System.Linq;
-using System.Threading.Tasks;
-using Microsoft.AspNetCore.Mvc;
-using Microsoft.Extensions.Logging;
-using WebApi2.Models;
+﻿using WebApi2.Models;
+using System.IO;
+using System.Web;
+using System.Web.Mvc;
 
 namespace WebApi2.Controllers
 {
     public class HomeController : Controller
     {
-        private readonly ILogger<HomeController> _logger;
-
-        public HomeController(ILogger<HomeController> logger)
+        [HttpGet]
+        public ActionResult GetGoogleDriveFiles()
         {
-            _logger = logger;
+            return View(GoogleDriveFilesRepository.GetDriveFiles());
         }
 
-        public IActionResult Index()
+        [HttpPost]
+        public ActionResult DeleteFile(GoogleDriveFiles file)
         {
-            return View();
+            GoogleDriveFilesRepository.DeleteFile(file);
+            return RedirectToAction("GetGoogleDriveFiles");
+        }
+         
+        [HttpPost]
+        public ActionResult UploadFile(HttpPostedFileBase file)
+        {
+            GoogleDriveFilesRepository.FileUpload(file);
+            return RedirectToAction("GetGoogleDriveFiles");
         }
 
-        public IActionResult Privacy()
+        public void DownloadFile(string id)
         {
-            return View();
-        }
+            string FilePath = GoogleDriveFilesRepository.DownloadGoogleFile(id);
+            
 
-        [ResponseCache(Duration = 0, Location = ResponseCacheLocation.None, NoStore = true)]
-        public IActionResult Error()
-        {
-            return View(new ErrorViewModel { RequestId = Activity.Current?.Id ?? HttpContext.TraceIdentifier });
+            Response.ContentType = "application/zip";
+            Response.AddHeader("Content-Disposition", "attachment; filename=" + Path.GetFileName(FilePath));
+            Response.WriteFile(System.Web.HttpContext.Current.Server.MapPath("~/GoogleDriveFiles/" + Path.GetFileName(FilePath)));
+            Response.End();
+            Response.Flush();
         }
     }
 }
